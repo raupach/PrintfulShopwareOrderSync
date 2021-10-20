@@ -44,7 +44,7 @@ public class PrintfulService {
 
     public void placeNewOrders(List<OrderBo> shopwareOrders) {
         shopwareOrders.forEach(orderBo -> {
-
+// TODO Hausnummer prüfen !!!
             NewOrderRequest printfulOrder = NewOrderRequest.builder()
                     .external_id(orderBo.getOrderNumber())
                     .recipient(Address.builder()

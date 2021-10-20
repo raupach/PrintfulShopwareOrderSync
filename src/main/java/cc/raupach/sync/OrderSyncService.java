@@ -82,12 +82,13 @@ public class OrderSyncService implements CommandLineRunner {
                     case archived:
                         shopwareService.setOrderStatus(order, OrderState.cancel);
                         break;
+                    case pending:
                     default:
                         break;
                 }
             }, () ->{
                 // Create new Printful Order
-                // printfulService.placeNewOrders(shopwareOrders);
+                 printfulService.placeNewOrders(List.of(order));
             });
         });
     }
