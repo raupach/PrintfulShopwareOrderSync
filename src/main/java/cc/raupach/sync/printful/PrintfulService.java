@@ -74,6 +74,8 @@ public class PrintfulService {
             NewOrderResponse response = printfulHttpClient.postOrder(printfulOrder);
             log.info("Printful Order created: {}", response.getResult().getId());
 
+            NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
+            log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
         });
 
     }
