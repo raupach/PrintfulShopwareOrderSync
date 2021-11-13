@@ -11,7 +11,6 @@ import cc.raupach.sync.shopware.bo.OrderBo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class OrderSyncService implements CommandLineRunner {
+public class OrderSyncService {
 
     @Autowired
     private ShopwareService shopwareService;
@@ -28,12 +27,10 @@ public class OrderSyncService implements CommandLineRunner {
     private PrintfulService printfulService;
 
 
-    @Override
-    public void run(String... args) throws Exception {
+    public void run() {
 
         processOpenShopwareOrders();
         processInProgressOrders();
-
     }
 
     private void processInProgressOrders() {
