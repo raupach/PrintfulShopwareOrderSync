@@ -50,7 +50,7 @@ public class OrderSyncService {
                     case canceled:
                     case failed:
                     case archived:
-                        shopwareService.setOrderStatus(order, OrderState.cancel);
+                        shopwareService.setOrderStatus(order, OrderState.cancel, true);
                         break;
                     default:
                         break;
@@ -72,12 +72,12 @@ public class OrderSyncService {
                 OrderStatus status = printfulOrder.getStatus();
                 switch (status) {
                     case inprocess:
-                        shopwareService.setOrderStatus(order, OrderState.process);
+                        shopwareService.setOrderStatus(order, OrderState.process, true);
                         break;
                     case canceled:
                     case failed:
                     case archived:
-                        shopwareService.setOrderStatus(order, OrderState.cancel);
+                        shopwareService.setOrderStatus(order, OrderState.cancel, false);
                         break;
                     case pending:
                     default:

@@ -35,6 +35,7 @@ public class ShopwareHttpClient {
     private static final String ACTION_ORDER_STATE = "/_action/order/";
     private static final String ACTION_DELIVERY_STATE = "/_action/order_delivery/";
     private static final String STATE = "/state/";
+    private static final String DELIVERIES = "/deliveries";
 
     @Autowired
     @Qualifier("shopware")
@@ -61,6 +62,16 @@ public class ShopwareHttpClient {
                 .block();
 
         return stateMachineStateEntityResponse.getData();
+    }
+
+    public List<EntityData<Delivery>> getDeliveriesByOrderId(String orderId) {
+        EntityResponse<Delivery> deliveryEntityResponse = shopwareWebClient.get()
+                .uri(shopwareSyncProperties.getUrl() + ORDER+"/"+orderId+ DELIVERIES)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<EntityResponse<Delivery>>() {})
+                .block();
+
+        return deliveryEntityResponse.getData();
     }
 
     public List<EntityData<Order>> searchOrder(FilteredRequest request) {

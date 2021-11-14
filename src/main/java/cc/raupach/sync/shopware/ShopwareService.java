@@ -161,9 +161,9 @@ public class ShopwareService {
 
     }
 
-    public void setOrderStatus(OrderBo order, OrderState orderState) {
+    public void setOrderStatus(OrderBo order, OrderState orderState, boolean sendMail) {
         Transition transition = Transition.builder()
-                .sendMail(true)
+                .sendMail(sendMail)
                 .mediaIds(List.of())
                 .documentIds(List.of())
                 .build();
@@ -172,12 +172,23 @@ public class ShopwareService {
     }
 
     public void setDeliveryStatus(OrderBo order, DeliveryState deliveryState) {
+
+        List<EntityData<Delivery>> deliveries = shopwareHttpClient.getDeliveriesByOrderId(order.getOrderId());
+        if (deliveries.size() != 1) {
+            throw new RuntimeException("Not yet implemented: multiple deliveries");
+        }
+
+        EntityData<Delivery> deliveryEntityData = deliveries.get(0);
+
         Transition transition = Transition.builder()
                 .sendMail(true)
                 .mediaIds(List.of())
                 .documentIds(List.of())
                 .build();
 
-        shopwareHttpClient.setOrderState(transition, order.getOrderId(), deliveryState);
+        shopwareHttpClient.setOrderState(transition, deliveryEntityData.getId(), deliveryState);
+
+        // close Order
+        setOrderStatus(order, OrderState.complete, false);
     }
 }
