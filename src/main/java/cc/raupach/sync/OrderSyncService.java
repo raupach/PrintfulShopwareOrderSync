@@ -79,6 +79,10 @@ public class OrderSyncService {
                     case archived:
                         shopwareService.setOrderStatus(order, OrderState.cancel, false);
                         break;
+                    case fulfilled:
+                        shopwareService.setOrderStatus(order, OrderState.process, false);
+                        shopwareService.setDeliveryStatus(order, DeliveryState.ship);
+                        break;
                     case pending:
                     default:
                         break;
