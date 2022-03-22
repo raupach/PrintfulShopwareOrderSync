@@ -5,6 +5,7 @@ import cc.raupach.sync.config.PrintfulSyncProperties;
 import cc.raupach.sync.printful.dto.*;
 import cc.raupach.sync.shopware.bo.AddressBo;
 import cc.raupach.sync.shopware.bo.OrderBo;
+import cc.raupach.sync.shopware.bo.ProductBo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -59,25 +61,38 @@ public class PrintfulService {
                             .zip(orderBo.getDeliverAddress().getZipcode())
                             .build())
                     .items(orderBo.getProducts().stream()
-                            .map(productBo -> Item.builder()
-                                    .sync_variant_id(new BigInteger(productBo.getProductNumber()))
-                                    .quantity(productBo.getQuantity())
-                                    .retail_price(productBo.getPrice().toString())
-                                    .name(productBo.getName())
-                                    .build())
+                            .map(this::toItem)
+                            .filter(Objects::nonNull)
                             .collect(Collectors.toList()))
                     .packing_slip(OrderPackingSlip.builder()
                             .email(printfulSyncProperties.getCustomerServiceEmail())
                             .build())
                     .build();
 
-            NewOrderResponse response = printfulHttpClient.postOrder(printfulOrder);
-            log.info("Printful Order created: {}", response.getResult().getId());
+            if (!printfulOrder.getItems().isEmpty()) {
+                NewOrderResponse response = printfulHttpClient.postOrder(printfulOrder);
+                log.info("Printful Order created: {}", response.getResult().getId());
 
-            NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
-            log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
+                NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
+                log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
+            } else {
+                log.info("Not a valid Printful orde: {}", orderBo.getOrderNumber());
+            }
         });
 
+    }
+
+    private Item toItem(ProductBo productBo) {
+        if (isValidPrintfulVariant(productBo.getProductNumber())) {
+            return Item.builder()
+              .sync_variant_id(new BigInteger(productBo.getProductNumber()))
+              .quantity(productBo.getQuantity())
+              .retail_price(productBo.getPrice().toString())
+              .name(productBo.getName())
+              .build();
+        } else {
+            return null;
+        }
     }
 
     private String getName(AddressBo deliverAddress) {
@@ -95,4 +110,7 @@ public class PrintfulService {
         return sb.toString();
     }
 
+    public boolean isValidPrintfulVariant(String id) {
+        return printfulHttpClient.getVariantDetail(id) != null;
+    }
 }

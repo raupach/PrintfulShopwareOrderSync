@@ -4,6 +4,7 @@ import cc.raupach.sync.config.PrintfulSyncProperties;
 import cc.raupach.sync.printful.dto.NewOrderRequest;
 import cc.raupach.sync.printful.dto.NewOrderResponse;
 import cc.raupach.sync.printful.dto.OrderResponse;
+import cc.raupach.sync.printful.dto.VariantResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,8 +24,9 @@ public class PrintfulHttpClient {
 
     public static final String ORDERS = "orders";
     private static final String CONFIRM = "/confirm";
+  private static final String STORE_VARIANTS =  "store/variants";
 
-    @Autowired
+  @Autowired
     private PrintfulSyncProperties printfulSyncProperties;
 
     @Autowired
@@ -104,4 +106,19 @@ public class PrintfulHttpClient {
         }
     }
 
+
+  public VariantResponse getVariantDetail(String id) {
+    Mono<VariantResponse> responseMono = printfulWebClient.get()
+      .uri(printfulSyncProperties.getUrl() + STORE_VARIANTS + "/" + id)
+      .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
+      .exchangeToMono(response -> {
+        if (response.statusCode().equals(HttpStatus.OK)) {
+          return response.bodyToMono(VariantResponse.class);
+        } else {
+          return Mono.empty();
+        }
+      });
+
+    return responseMono.block();
+  }
 }

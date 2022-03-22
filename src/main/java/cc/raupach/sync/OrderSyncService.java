@@ -87,9 +87,9 @@ public class OrderSyncService {
                     default:
                         break;
                 }
-            }, () ->{
+            }, () -> {
                 // Create new Printful Order
-                 printfulService.placeNewOrders(List.of(order));
+                printfulService.placeNewOrders(List.of(order));
             });
         });
     }
