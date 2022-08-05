@@ -43,7 +43,7 @@ public class ShopwareService {
                     )
                     .build()).collect(Collectors.toList());
 
-            log.info("{} StateMachines read.", states.size());
+            log.trace("{} StateMachines read.", states.size());
         }
         return states;
 
@@ -162,6 +162,7 @@ public class ShopwareService {
     }
 
     public void setOrderStatus(OrderBo order, OrderState orderState, boolean sendMail) {
+        log.info("Set order status: {} for order number {}", orderState, order.getOrderNumber());
         Transition transition = Transition.builder()
                 .sendMail(sendMail)
                 .mediaIds(List.of())

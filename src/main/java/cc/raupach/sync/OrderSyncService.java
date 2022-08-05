@@ -29,7 +29,10 @@ public class OrderSyncService {
 
     public void run() {
 
-        processOpenShopwareOrders();
+        log.info(">>> Check open and paid orders. <<<");
+        processOpenAndPaidShopwareOrders();
+
+        log.info(">>> Check in progress orders. <<<");
         processInProgressOrders();
     }
 
@@ -43,25 +46,15 @@ public class OrderSyncService {
             printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
                 OrderStatus status = printfulOrder.getStatus();
                 switch (status) {
-
-                    case fulfilled:
-                        shopwareService.setDeliveryStatus(order, DeliveryState.ship);
-                        break;
-                    case canceled:
-                    case failed:
-                    case archived:
-                        shopwareService.setOrderStatus(order, OrderState.cancel, true);
-                        break;
-                    default:
-                        break;
+                    case fulfilled -> shopwareService.setDeliveryStatus(order, DeliveryState.ship);
+                    case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, true);
+                    default -> log.info("No change for order {}", order.getOrderNumber());
                 }
-            }, () -> {
-                log.warn("Ooops, 'in process' order {} is missing at printful.", order.getOrderNumber());
-            });
+            }, () -> log.info("Ooops, 'in process' order {} is not a valid printful order.", order.getOrderNumber()));
         });
     }
 
-    private void processOpenShopwareOrders() {
+    private void processOpenAndPaidShopwareOrders() {
         List<OrderBo> openAndPaidOrders = shopwareService.getOpenAndPaidOrders();
         log.info("{} open and paid orders found.", openAndPaidOrders.size());
 
@@ -71,21 +64,15 @@ public class OrderSyncService {
             printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
                 OrderStatus status = printfulOrder.getStatus();
                 switch (status) {
-                    case inprocess:
-                        shopwareService.setOrderStatus(order, OrderState.process, true);
-                        break;
-                    case canceled:
-                    case failed:
-                    case archived:
-                        shopwareService.setOrderStatus(order, OrderState.cancel, false);
-                        break;
-                    case fulfilled:
+                    case inprocess -> shopwareService.setOrderStatus(order, OrderState.process, true);
+                    case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, false);
+                    case fulfilled -> {
                         shopwareService.setOrderStatus(order, OrderState.process, false);
                         shopwareService.setDeliveryStatus(order, DeliveryState.ship);
-                        break;
-                    case pending:
-                    default:
-                        break;
+                    }
+                    case pending -> log.info("Order {} still pending.", order.getOrderNumber());
+                    default -> {
+                    }
                 }
             }, () -> {
                 // Create new Printful Order

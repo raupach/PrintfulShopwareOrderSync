@@ -1,0 +1,6 @@
+
+## Build docker image
+docker build -t printful-shopware-order-sync .
+
+## Run docker container
+docker run --name printfulShopwareOrderSync -d printful-shopware-order-sync

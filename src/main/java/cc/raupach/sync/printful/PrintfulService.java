@@ -76,7 +76,7 @@ public class PrintfulService {
                 NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
                 log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
             } else {
-                log.info("Not a valid Printful orde: {}", orderBo.getOrderNumber());
+                log.info("Not a valid Printful order: {}", orderBo.getOrderNumber());
             }
         });
 
