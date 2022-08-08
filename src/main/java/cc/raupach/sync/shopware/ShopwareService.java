@@ -31,17 +31,17 @@ public class ShopwareService {
         if (states.isEmpty()) {
             List<EntityData<StateMachine>> stateMachines = shopwareHttpClient.getStateMachines();
             states = stateMachines.stream().map(m -> StateMachineBo.builder()
-                    .id(m.getId())
-                    .name(m.getAttributes().getName())
-                    .technicalName(m.getAttributes().getTechnicalName())
-                    .states(shopwareHttpClient.getStateMachinesStates(m.getId()).stream()
-                            .map(s -> StateMachineStateBo.builder()
-                                    .id(s.getId())
-                                    .name(s.getAttributes().getName())
-                                    .technicalName(s.getAttributes().getTechnicalName())
-                                    .build()).collect(Collectors.toList())
-                    )
-                    .build()).collect(Collectors.toList());
+                .id(m.getId())
+                .name(m.getAttributes().getName())
+                .technicalName(m.getAttributes().getTechnicalName())
+                .states(shopwareHttpClient.getStateMachinesStates(m.getId()).stream()
+                    .map(s -> StateMachineStateBo.builder()
+                        .id(s.getId())
+                        .name(s.getAttributes().getName())
+                        .technicalName(s.getAttributes().getTechnicalName())
+                        .build()).collect(Collectors.toList())
+                )
+                .build()).collect(Collectors.toList());
 
             log.trace("{} StateMachines read.", states.size());
         }
@@ -54,12 +54,12 @@ public class ShopwareService {
         String openStateId = findState(getStateMachines(), "order.state", stateName);
 
         FilteredRequest request = FilteredRequest.builder()
-                .filter(List.of(Filter.builder()
-                        .type(FilterType.equals)
-                        .field("stateId")
-                        .value(openStateId)
-                        .build()))
-                .build();
+            .filter(List.of(Filter.builder()
+                .type(FilterType.equals)
+                .field("stateId")
+                .value(openStateId)
+                .build()))
+            .build();
 
         List<EntityData<Order>> response = shopwareHttpClient.searchOrder(request);
         log.info("{} open orders found.", response.size());
@@ -68,14 +68,14 @@ public class ShopwareService {
 
     private String findState(List<StateMachineBo> stateMachines, String stateMachineName, String stateMachineStateName) {
         return stateMachines.stream()
-                .filter(stateMachineBo -> StringUtils.equals(stateMachineBo.getTechnicalName(), stateMachineName))
-                .findAny()
-                .orElseThrow()
-                .getStates().stream()
-                .filter(s->StringUtils.equals(s.getTechnicalName(), stateMachineStateName))
-                .findAny()
-                .orElseThrow()
-                .getId();
+            .filter(stateMachineBo -> StringUtils.equals(stateMachineBo.getTechnicalName(), stateMachineName))
+            .findAny()
+            .orElseThrow()
+            .getStates().stream()
+            .filter(s -> StringUtils.equals(s.getTechnicalName(), stateMachineStateName))
+            .findAny()
+            .orElseThrow()
+            .getId();
     }
 
     public List<OrderBo> getOpenAndPaidOrders() {
@@ -93,86 +93,86 @@ public class ShopwareService {
         String paidStateId = findState(getStateMachines(), "order_transaction.state", shopwareSyncProperties.getOrderPaidStateName());
 
         return orders.stream()
-                .filter(order -> {
-                    List<EntityData<OrderTransaction>> tx = shopwareHttpClient.getOrderTransactions(order.getId());
-                    if (tx.size() != 1) {
-                        throw new RuntimeException("Unexpected result");
-                    } else {
-                        return StringUtils.equals(paidStateId, tx.get(0).getAttributes().getStateId());
-                    }
-                }).collect(Collectors.toList());
+            .filter(order -> {
+                List<EntityData<OrderTransaction>> tx = shopwareHttpClient.getOrderTransactions(order.getId());
+                if (tx.size() != 1) {
+                    throw new RuntimeException("Unexpected result");
+                } else {
+                    return StringUtils.equals(paidStateId, tx.get(0).getAttributes().getStateId());
+                }
+            }).collect(Collectors.toList());
     }
 
     public List<OrderBo> mapToOrderBo(List<EntityData<Order>> openOrders) {
         return openOrders.stream()
-                .map(order -> {
+            .map(order -> {
 
-                    List<EntityData<Addresses>> addresses = shopwareHttpClient.getAddresses(order.getId());
-                    if (addresses.size() != 1) {
-                        throw new RuntimeException("Multiple delivery Addresses");
-                    }
-                    EntityData<Addresses> address = addresses.get(0);
-                    List<EntityData<Country>> countries = shopwareHttpClient.getCountryForAddress(address.getId());
-                    if (addresses.size() != 1) {
-                        throw new RuntimeException("Multiple delivery countries");
-                    }
-                    EntityData<Country> country = countries.get(0);
+                List<EntityData<Addresses>> addresses = shopwareHttpClient.getAddresses(order.getId());
+                if (addresses.size() != 1) {
+                    throw new RuntimeException("Multiple delivery Addresses");
+                }
+                EntityData<Addresses> address = addresses.get(0);
+                List<EntityData<Country>> countries = shopwareHttpClient.getCountryForAddress(address.getId());
+                if (addresses.size() != 1) {
+                    throw new RuntimeException("Multiple delivery countries");
+                }
+                EntityData<Country> country = countries.get(0);
 
-                    List<EntityData<LineItem>> lineItems = shopwareHttpClient.getLineItems(order.getId());
-                    List<ProductBo> productBos = lineItems.stream()
-                            .map(lineItem -> {
-                                List<EntityData<Product>> products = shopwareHttpClient.getOrderLineItemProduct(lineItem.getId());
-                                if (products.size() != 1) {
-                                    throw new RuntimeException("Multiple products for one line item.");
-                                }
-                                EntityData<Product> product = products.get(0);
+                List<EntityData<LineItem>> lineItems = shopwareHttpClient.getLineItems(order.getId());
+                List<ProductBo> productBos = lineItems.stream()
+                    .map(lineItem -> {
+                        List<EntityData<Product>> products = shopwareHttpClient.getOrderLineItemProduct(lineItem.getId());
+                        if (products.size() != 1) {
+                            throw new RuntimeException("Multiple products for one line item.");
+                        }
+                        EntityData<Product> product = products.get(0);
 
-                                return ProductBo.builder()
-                                        .quantity(lineItem.getAttributes().getQuantity())
-                                        .productNumber(product.getAttributes().getProductNumber())
-                                        .price(lineItem.getAttributes().getTotalPrice())
-                                        .name(lineItem.getAttributes().getLabel())
-                                        .build();
-                            })
-                            .collect(Collectors.toList());
-
-                    return OrderBo.builder()
-                            .orderId(order.getId())
-                            .orderNumber(order.getAttributes().getOrderNumber())
-                            .amountTotal(order.getAttributes().getAmountTotal())
-                            .products(productBos)
-                            .deliverAddress(AddressBo.builder()
-                                    .addressId(address.getId())
-                                    .firstName(address.getAttributes().getFirstName())
-                                    .city(address.getAttributes().getCity())
-                                    .lastName(address.getAttributes().getLastName())
-                                    .street(address.getAttributes().getStreet())
-                                    .title(address.getAttributes().getTitle())
-                                    .zipcode(address.getAttributes().getZipcode())
-                                    .additionalAddressLine1(address.getAttributes().getAdditionalAddressLine1())
-                                    .additionalAddressLine2(address.getAttributes().getAdditionalAddressLine2())
-                                    .phoneNumber(address.getAttributes().getPhoneNumber())
-                                    .countryCode(country.getAttributes().getIso())
-                                    .countryName(country.getAttributes().getName())
-                                    .build())
+                        return ProductBo.builder()
+                            .quantity(lineItem.getAttributes().getQuantity())
+                            .productNumber(product.getAttributes().getProductNumber())
+                            .price(lineItem.getAttributes().getTotalPrice())
+                            .name(lineItem.getAttributes().getLabel())
                             .build();
-                })
-                .collect(Collectors.toList());
+                    })
+                    .collect(Collectors.toList());
+
+                return OrderBo.builder()
+                    .orderId(order.getId())
+                    .orderNumber(order.getAttributes().getOrderNumber())
+                    .amountTotal(order.getAttributes().getAmountTotal())
+                    .products(productBos)
+                    .deliverAddress(AddressBo.builder()
+                        .addressId(address.getId())
+                        .firstName(address.getAttributes().getFirstName())
+                        .city(address.getAttributes().getCity())
+                        .lastName(address.getAttributes().getLastName())
+                        .street(address.getAttributes().getStreet())
+                        .title(address.getAttributes().getTitle())
+                        .zipcode(address.getAttributes().getZipcode())
+                        .additionalAddressLine1(address.getAttributes().getAdditionalAddressLine1())
+                        .additionalAddressLine2(address.getAttributes().getAdditionalAddressLine2())
+                        .phoneNumber(address.getAttributes().getPhoneNumber())
+                        .countryCode(country.getAttributes().getIso())
+                        .countryName(country.getAttributes().getName())
+                        .build())
+                    .build();
+            })
+            .collect(Collectors.toList());
 
     }
 
     public void setOrderStatus(OrderBo order, OrderState orderState, boolean sendMail) {
         log.info("Set order status: {} for order number {}", orderState, order.getOrderNumber());
         Transition transition = Transition.builder()
-                .sendMail(sendMail)
-                .mediaIds(List.of())
-                .documentIds(List.of())
-                .build();
+            .sendMail(sendMail)
+            .mediaIds(List.of())
+            .documentIds(List.of())
+            .build();
 
         shopwareHttpClient.setOrderState(transition, order.getOrderId(), orderState);
     }
 
-    public void setDeliveryStatus(OrderBo order, DeliveryState deliveryState) {
+    public void setDeliveryStatus(OrderBo order, List<String> trackingUrls, DeliveryState deliveryState) {
 
         List<EntityData<Delivery>> deliveries = shopwareHttpClient.getDeliveriesByOrderId(order.getOrderId());
         if (deliveries.size() != 1) {
@@ -181,11 +181,18 @@ public class ShopwareService {
 
         EntityData<Delivery> deliveryEntityData = deliveries.get(0);
 
+        DeliveryOrderTrackingCode deliveryOrderTrackingCode = DeliveryOrderTrackingCode.builder()
+            .trackingCodes(trackingUrls)
+            .build();
+
+        log.info("Set trackingCodes: {}", trackingUrls);
+        shopwareHttpClient.patchDeliveryOrder(deliveryOrderTrackingCode, deliveryEntityData.getId());
+
         Transition transition = Transition.builder()
-                .sendMail(true)
-                .mediaIds(List.of())
-                .documentIds(List.of())
-                .build();
+            .sendMail(true)
+            .mediaIds(List.of())
+            .documentIds(List.of())
+            .build();
 
         shopwareHttpClient.setOrderState(transition, deliveryEntityData.getId(), deliveryState);
 

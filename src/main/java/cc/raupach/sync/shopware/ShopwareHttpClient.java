@@ -32,10 +32,11 @@ public class ShopwareHttpClient {
     private static final String PRODUCT = "/product";
     private static final String TRANSACTIONS = "/transactions";
     private static final String COUNTRY = "/country";
-    private static final String ACTION_ORDER_STATE = "/_action/order/";
-    private static final String ACTION_DELIVERY_STATE = "/_action/order_delivery/";
+    private static final String ACTION_ORDER_STATE = "_action/order/";
+    private static final String ACTION_DELIVERY_STATE = "_action/order_delivery/";
     private static final String STATE = "/state/";
     private static final String DELIVERIES = "/deliveries";
+    private static final String ORDER_DELIVERY = "order-delivery/";
 
     @Autowired
     @Qualifier("shopware")
@@ -183,6 +184,23 @@ public class ShopwareHttpClient {
                     }
                 })
                 .block();
+    }
 
+    public void patchDeliveryOrder(DeliveryOrderTrackingCode deliveryOrder, String deliveryId) {
+
+        shopwareWebClient.patch()
+            .uri(shopwareSyncProperties.getUrl() + ORDER_DELIVERY + deliveryId)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .body(Mono.just(deliveryOrder), Transition.class)
+            .exchangeToMono(response -> {
+                if (response.statusCode().equals(HttpStatus.NO_CONTENT)) {
+                    log.info("Shopware set Tracking Code: {}", deliveryId);
+                    return Mono.empty();
+                } else {
+                    log.error("Error setting Tracking Code: {}", response.statusCode());
+                    return Mono.error(new RuntimeException("Error setting Tracking Code: " + response.statusCode()));
+                }
+            })
+            .block();
     }
 }

@@ -4,12 +4,12 @@ package cc.raupach.sync;
 import cc.raupach.sync.printful.PrintfulService;
 import cc.raupach.sync.printful.dto.Order;
 import cc.raupach.sync.printful.dto.OrderStatus;
+import cc.raupach.sync.printful.dto.Shipment;
 import cc.raupach.sync.shopware.DeliveryState;
 import cc.raupach.sync.shopware.OrderState;
 import cc.raupach.sync.shopware.ShopwareService;
 import cc.raupach.sync.shopware.bo.OrderBo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,8 +45,9 @@ public class OrderSyncService {
 
             printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
                 OrderStatus status = printfulOrder.getStatus();
+                List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
                 switch (status) {
-                    case fulfilled -> shopwareService.setDeliveryStatus(order, DeliveryState.ship);
+                    case fulfilled -> shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
                     case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, true);
                     default -> log.info("No change for order {}", order.getOrderNumber());
                 }
@@ -63,12 +64,13 @@ public class OrderSyncService {
 
             printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
                 OrderStatus status = printfulOrder.getStatus();
+                List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
                 switch (status) {
                     case inprocess -> shopwareService.setOrderStatus(order, OrderState.process, true);
                     case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, false);
                     case fulfilled -> {
                         shopwareService.setOrderStatus(order, OrderState.process, false);
-                        shopwareService.setDeliveryStatus(order, DeliveryState.ship);
+                        shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
                     }
                     case pending -> log.info("Order {} still pending.", order.getOrderNumber());
                     default -> {
@@ -81,9 +83,4 @@ public class OrderSyncService {
         });
     }
 
-    private Optional<OrderBo> findShopwareOrder(List<OrderBo> shopwareOrders, Order printfulOrder) {
-        return shopwareOrders.stream()
-                .filter(o-> StringUtils.equals(printfulOrder.getExternal_id(), o.getOrderNumber()))
-                .findAny();
-    }
 }

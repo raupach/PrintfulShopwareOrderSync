@@ -1,6 +1,7 @@
-package cc.raupach.sync.shopware.dto.attributes;
+package cc.raupach.sync.shopware.dto;
 
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -10,12 +11,9 @@ import java.util.List;
 
 @Getter
 @Setter
-public class Delivery {
+@Builder
+public class DeliveryOrderTrackingCode {
 
-    private String orderId;
-    private String shippingOrderAddressId;
-    private String shippingMethodId;
-    private String stateId;
     private List<String> trackingCodes;
 
     @Override
