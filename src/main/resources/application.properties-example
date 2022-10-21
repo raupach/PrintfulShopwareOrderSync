@@ -6,7 +6,7 @@ sync.shopware.token-uri=https://<INSERT YOUR SHOPWARE-DOMAIN>/api/oauth/token
 
 # Custom
 sync.printful.url=https://api.printful.com/
-sync.printful.apiKey=<INSERT YOUR PRINTFUL SHOP API KEY>
+sync.printful.access_key=<INSERT YOUR PRINTFUL PRIVATE TOKEN>
 
 # The mail address of the customer support. (Will be printed on the packing slip).
 sync.printful.customerServiceEmail=<EMAIL>
