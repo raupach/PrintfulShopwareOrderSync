@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 @PropertySource("classpath:application.properties")
 public class PrintfulSyncProperties {
 
-    @Value("${sync.printful.apiKey}")
-    private String apiKey;
+
+    @Value("${sync.printful.access_key}")
+    private String accessKey;
 
     @Value("${sync.printful.url}")
     private String url;

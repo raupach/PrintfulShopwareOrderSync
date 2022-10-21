@@ -12,11 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Base64Utils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Service
 @Slf4j
@@ -24,60 +21,68 @@ public class PrintfulHttpClient {
 
     public static final String ORDERS = "orders";
     private static final String CONFIRM = "/confirm";
-  private static final String STORE_VARIANTS =  "store/variants";
+    private static final String STORE_VARIANTS = "store/variants";
+    private static final String AUTHORIZATION = "Authorization";
 
-  @Autowired
+    @Autowired
     private PrintfulSyncProperties printfulSyncProperties;
 
     @Autowired
     @Qualifier("printful")
     private WebClient printfulWebClient;
 
+
+    private String getAuthorizationValue() {
+        return "Bearer " + printfulSyncProperties.getAccessKey();
+    }
+
+
     public OrderResponse getOrders() {
 
         return printfulWebClient.get()
-                .uri(printfulSyncProperties.getUrl() + ORDERS)
-                .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
-                .retrieve()
-                .bodyToMono(OrderResponse.class)
-                .block();
+            .uri(printfulSyncProperties.getUrl() + ORDERS)
+            .header(AUTHORIZATION, getAuthorizationValue())
+            .retrieve()
+            .bodyToMono(OrderResponse.class)
+            .block();
     }
 
     public NewOrderResponse getOrderByExternalId(String externalId) {
 
         Mono<NewOrderResponse> newOrderResponseMono = printfulWebClient.get()
-                .uri(printfulSyncProperties.getUrl() + ORDERS + "/@" + externalId)
-                .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        return response.bodyToMono(NewOrderResponse.class);
-                    } else {
-                        return Mono.empty();
-                    }
-                });
+            .uri(printfulSyncProperties.getUrl() + ORDERS + "/@" + externalId)
+            .header(AUTHORIZATION, getAuthorizationValue())
+            .exchangeToMono(response -> {
+                if (response.statusCode().equals(HttpStatus.OK)) {
+                    return response.bodyToMono(NewOrderResponse.class);
+                } else {
+                    return Mono.empty();
+                }
+            });
 
         return newOrderResponseMono.block();
     }
 
+
     public NewOrderResponse postOrder(NewOrderRequest printfulOrder) {
         Mono<NewOrderResponse> result = printfulWebClient.post()
-                .uri(printfulSyncProperties.getUrl() + ORDERS)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
-                .body(Mono.just(printfulOrder), NewOrderRequest.class)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        return response.bodyToMono(NewOrderResponse.class);
-                    } else {
-                        return Mono.empty();
-                    }
-                });
+            .uri(printfulSyncProperties.getUrl() + ORDERS)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(AUTHORIZATION, getAuthorizationValue())
+            .body(Mono.just(printfulOrder), NewOrderRequest.class)
+            .exchangeToMono(response -> {
+                if (response.statusCode().equals(HttpStatus.OK)) {
+                    return response.bodyToMono(NewOrderResponse.class);
+                } else {
+                    return Mono.empty();
+                }
+            });
 
         NewOrderResponse payload = result.block();
         if (payload == null) {
             throw new RuntimeException("Error....");
         } else if (payload.getCode() != 200) {
-            throw new RuntimeException("Error...."+payload.getCode());
+            throw new RuntimeException("Error...." + payload.getCode());
         } else {
             return payload;
         }
@@ -85,40 +90,40 @@ public class PrintfulHttpClient {
 
     public NewOrderResponse confirmOrder(String orderId) {
         Mono<NewOrderResponse> result = printfulWebClient.post()
-                .uri(printfulSyncProperties.getUrl() + ORDERS+ "/"+ orderId+ CONFIRM)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        return response.bodyToMono(NewOrderResponse.class);
-                    } else {
-                        return Mono.empty();
-                    }
-                });
+            .uri(printfulSyncProperties.getUrl() + ORDERS + "/" + orderId + CONFIRM)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(AUTHORIZATION, getAuthorizationValue())
+            .exchangeToMono(response -> {
+                if (response.statusCode().equals(HttpStatus.OK)) {
+                    return response.bodyToMono(NewOrderResponse.class);
+                } else {
+                    return Mono.empty();
+                }
+            });
 
         NewOrderResponse payload = result.block();
         if (payload == null) {
             throw new RuntimeException("Error....");
         } else if (payload.getCode() != 200) {
-            throw new RuntimeException("Error...."+payload.getCode());
+            throw new RuntimeException("Error...." + payload.getCode());
         } else {
             return payload;
         }
     }
 
 
-  public VariantResponse getVariantDetail(String id) {
-    Mono<VariantResponse> responseMono = printfulWebClient.get()
-      .uri(printfulSyncProperties.getUrl() + STORE_VARIANTS + "/" + id)
-      .header("Authorization", "Basic " + Base64Utils.encodeToString(printfulSyncProperties.getApiKey().getBytes(UTF_8)))
-      .exchangeToMono(response -> {
-        if (response.statusCode().equals(HttpStatus.OK)) {
-          return response.bodyToMono(VariantResponse.class);
-        } else {
-          return Mono.empty();
-        }
-      });
+    public VariantResponse getVariantDetail(String id) {
+        Mono<VariantResponse> responseMono = printfulWebClient.get()
+            .uri(printfulSyncProperties.getUrl() + STORE_VARIANTS + "/" + id)
+            .header(AUTHORIZATION, getAuthorizationValue())
+            .exchangeToMono(response -> {
+                if (response.statusCode().equals(HttpStatus.OK)) {
+                    return response.bodyToMono(VariantResponse.class);
+                } else {
+                    return Mono.empty();
+                }
+            });
 
-    return responseMono.block();
-  }
+        return responseMono.block();
+    }
 }
