@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 public class PrintfulSyncProperties {
 
 
-    @Value("${sync.printful.access_key}")
-    private String accessKey;
+  @Value("${sync.printful.access_key}")
+  private String accessKey;
 
-    @Value("${sync.printful.url}")
-    private String url;
+  @Value("${sync.printful.url}")
+  private String url;
 
-    @Value("${sync.printful.customerServiceEmail}")
-    private String customerServiceEmail;
+  @Value("${sync.printful.customerServiceEmail}")
+  private String customerServiceEmail;
 
 }

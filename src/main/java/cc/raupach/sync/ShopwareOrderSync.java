@@ -11,14 +11,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class ShopwareOrderSync {
 
 
-    public static void main(String[] args) {
+  public static void main(String[] args) {
 
-        log.info("Start.............................................................................................");
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+    log.info("Start.............................................................................................");
+    ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
 
-        OrderSyncService syncService = context.getBean("orderSyncService", OrderSyncService.class);
-        syncService.run();
+    OrderSyncService syncService = context.getBean("orderSyncService", OrderSyncService.class);
+    syncService.run();
 
-    }
+  }
 
 }

@@ -21,96 +21,96 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PrintfulService {
 
-    @Autowired
-    private PrintfulHttpClient printfulHttpClient;
+  @Autowired
+  private PrintfulHttpClient printfulHttpClient;
 
-    @Autowired
-    private PrintfulSyncProperties printfulSyncProperties;
+  @Autowired
+  private PrintfulSyncProperties printfulSyncProperties;
 
-    public List<Order> getOrders() {
-        OrderResponse orderRequest = printfulHttpClient.getOrders();
-        log.info("Get {} Printful orders: {}",orderRequest.getResult().size(), orderRequest);
-        return orderRequest.getResult();
+  public List<Order> getOrders() {
+    OrderResponse orderRequest = printfulHttpClient.getOrders();
+    log.info("Get {} Printful orders: {}", orderRequest.getResult().size(), orderRequest);
+    return orderRequest.getResult();
+  }
+
+
+  public Optional<Order> getOrder(String orderNumber) {
+
+    NewOrderResponse orderRequest = printfulHttpClient.getOrderByExternalId(orderNumber);
+    if (orderRequest != null) {
+      return Optional.of(orderRequest.getResult());
+    } else {
+      return Optional.empty();
     }
+  }
 
-
-    public Optional<Order> getOrder(String orderNumber) {
-
-        NewOrderResponse orderRequest = printfulHttpClient.getOrderByExternalId(orderNumber);
-        if (orderRequest != null) {
-            return Optional.of(orderRequest.getResult());
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public void placeNewOrders(List<OrderBo> shopwareOrders) {
-        shopwareOrders.forEach(orderBo -> {
+  public void placeNewOrders(List<OrderBo> shopwareOrders) {
+    shopwareOrders.forEach(orderBo -> {
 // TODO Hausnummer prüfen !!!
-            NewOrderRequest printfulOrder = NewOrderRequest.builder()
-                    .external_id(orderBo.getOrderNumber())
-                    .recipient(Address.builder()
-                            .name(getName(orderBo.getDeliverAddress()))
-                            .address1(orderBo.getDeliverAddress().getStreet())
-                            .address2(orderBo.getDeliverAddress().getAdditionalAddressLine1())
-                            .city(orderBo.getDeliverAddress().getCity())
-                            .company(orderBo.getDeliverAddress().getCompany())
-                            .country_code(orderBo.getDeliverAddress().getCountryCode())
-                            .country_name(orderBo.getDeliverAddress().getCountryName())
-                            .phone(orderBo.getDeliverAddress().getPhoneNumber())
-                            .zip(orderBo.getDeliverAddress().getZipcode())
-                            .build())
-                    .items(orderBo.getProducts().stream()
-                            .map(this::toItem)
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList()))
-                    .packing_slip(OrderPackingSlip.builder()
-                            .email(printfulSyncProperties.getCustomerServiceEmail())
-                            .build())
-                    .build();
+      NewOrderRequest printfulOrder = NewOrderRequest.builder()
+        .external_id(orderBo.getOrderNumber())
+        .recipient(Address.builder()
+          .name(getName(orderBo.getDeliverAddress()))
+          .address1(orderBo.getDeliverAddress().getStreet())
+          .address2(orderBo.getDeliverAddress().getAdditionalAddressLine1())
+          .city(orderBo.getDeliverAddress().getCity())
+          .company(orderBo.getDeliverAddress().getCompany())
+          .country_code(orderBo.getDeliverAddress().getCountryCode())
+          .country_name(orderBo.getDeliverAddress().getCountryName())
+          .phone(orderBo.getDeliverAddress().getPhoneNumber())
+          .zip(orderBo.getDeliverAddress().getZipcode())
+          .build())
+        .items(orderBo.getProducts().stream()
+          .map(this::toItem)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList()))
+        .packing_slip(OrderPackingSlip.builder()
+          .email(printfulSyncProperties.getCustomerServiceEmail())
+          .build())
+        .build();
 
-            if (!printfulOrder.getItems().isEmpty()) {
-                NewOrderResponse response = printfulHttpClient.postOrder(printfulOrder);
-                log.info("Printful Order created: {}", response.getResult().getId());
+      if (!printfulOrder.getItems().isEmpty()) {
+        NewOrderResponse response = printfulHttpClient.postOrder(printfulOrder);
+        log.info("Printful Order created: {}", response.getResult().getId());
 
-                NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
-                log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
-            } else {
-                log.info("Not a valid Printful order: {}", orderBo.getOrderNumber());
-            }
-        });
+        NewOrderResponse responseConfirm = printfulHttpClient.confirmOrder(response.getResult().getId().toString());
+        log.info("Printful Order confirm: {}", responseConfirm.getResult().getId());
+      } else {
+        log.info("Not a valid Printful order: {}", orderBo.getOrderNumber());
+      }
+    });
 
+  }
+
+  private Item toItem(ProductBo productBo) {
+    if (isValidPrintfulVariant(productBo.getProductNumber())) {
+      return Item.builder()
+        .sync_variant_id(new BigInteger(productBo.getProductNumber()))
+        .quantity(productBo.getQuantity())
+        .retail_price(productBo.getPrice().toString())
+        .name(productBo.getName())
+        .build();
+    } else {
+      return null;
+    }
+  }
+
+  private String getName(AddressBo deliverAddress) {
+    StringBuilder sb = new StringBuilder();
+    if (StringUtils.isNotEmpty(deliverAddress.getTitle())) {
+      sb.append(deliverAddress.getTitle()).append(" ");
     }
 
-    private Item toItem(ProductBo productBo) {
-        if (isValidPrintfulVariant(productBo.getProductNumber())) {
-            return Item.builder()
-              .sync_variant_id(new BigInteger(productBo.getProductNumber()))
-              .quantity(productBo.getQuantity())
-              .retail_price(productBo.getPrice().toString())
-              .name(productBo.getName())
-              .build();
-        } else {
-            return null;
-        }
+    if (StringUtils.isNotEmpty(deliverAddress.getFirstName())) {
+      sb.append(deliverAddress.getFirstName()).append(" ");
     }
 
-    private String getName(AddressBo deliverAddress) {
-        StringBuilder sb = new StringBuilder();
-        if (StringUtils.isNotEmpty(deliverAddress.getTitle())) {
-            sb.append(deliverAddress.getTitle()).append(" ");
-        }
+    sb.append(deliverAddress.getLastName());
 
-        if (StringUtils.isNotEmpty(deliverAddress.getFirstName())) {
-            sb.append(deliverAddress.getFirstName()).append(" ");
-        }
+    return sb.toString();
+  }
 
-        sb.append(deliverAddress.getLastName());
-
-        return sb.toString();
-    }
-
-    public boolean isValidPrintfulVariant(String id) {
-        return printfulHttpClient.getVariantDetail(id) != null;
-    }
+  public boolean isValidPrintfulVariant(String id) {
+    return printfulHttpClient.getVariantDetail(id) != null;
+  }
 }

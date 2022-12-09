@@ -12,15 +12,15 @@ import org.springframework.stereotype.Component;
 @PropertySource("classpath:application.properties")
 public class ShopwareSyncProperties {
 
-    @Value("${sync.shopware.url}")
-    private String url;
+  @Value("${sync.shopware.url}")
+  private String url;
 
-    @Value("${sync.shopware.orderOpenStateName}")
-    private String orderOpenStateName;
+  @Value("${sync.shopware.orderOpenStateName}")
+  private String orderOpenStateName;
 
-    @Value("${sync.shopware.orderPaidStateName}")
-    private String orderPaidStateName;
+  @Value("${sync.shopware.orderPaidStateName}")
+  private String orderPaidStateName;
 
-    @Value("${sync.shopware.orderProgressStateName}")
-    private String orderProgressStateName;
+  @Value("${sync.shopware.orderProgressStateName}")
+  private String orderProgressStateName;
 }

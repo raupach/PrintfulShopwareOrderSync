@@ -21,186 +21,194 @@ import java.util.List;
 public class ShopwareHttpClient {
 
 
-    private static final String STATE_MACHINE = "state-machine";
-    private static final String SEARCH_ORDER = "search/order";
-    private static final String STATES = "/states";
-    private static final String ORDER = "order";
-    private static final String ORDER_LINE_ITEM = "order-line-item";
-    private static final String ORDER_ADDRESS = "order-address";
-    private static final String ADDRESSES = "/addresses";
-    private static final String LINE_ITEMS = "/line-items";
-    private static final String PRODUCT = "/product";
-    private static final String TRANSACTIONS = "/transactions";
-    private static final String COUNTRY = "/country";
-    private static final String ACTION_ORDER_STATE = "_action/order/";
-    private static final String ACTION_DELIVERY_STATE = "_action/order_delivery/";
-    private static final String STATE = "/state/";
-    private static final String DELIVERIES = "/deliveries";
-    private static final String ORDER_DELIVERY = "order-delivery/";
+  private static final String STATE_MACHINE = "state-machine";
+  private static final String SEARCH_ORDER = "search/order";
+  private static final String STATES = "/states";
+  private static final String ORDER = "order";
+  private static final String ORDER_LINE_ITEM = "order-line-item";
+  private static final String ORDER_ADDRESS = "order-address";
+  private static final String ADDRESSES = "/addresses";
+  private static final String LINE_ITEMS = "/line-items";
+  private static final String PRODUCT = "/product";
+  private static final String TRANSACTIONS = "/transactions";
+  private static final String COUNTRY = "/country";
+  private static final String ACTION_ORDER_STATE = "_action/order/";
+  private static final String ACTION_DELIVERY_STATE = "_action/order_delivery/";
+  private static final String STATE = "/state/";
+  private static final String DELIVERIES = "/deliveries";
+  private static final String ORDER_DELIVERY = "order-delivery/";
 
-    @Autowired
-    @Qualifier("shopware")
-    private WebClient shopwareWebClient;
+  @Autowired
+  @Qualifier("shopware")
+  private WebClient shopwareWebClient;
 
-    @Autowired
-    private ShopwareSyncProperties shopwareSyncProperties;
+  @Autowired
+  private ShopwareSyncProperties shopwareSyncProperties;
 
-    public List<EntityData<StateMachine>> getStateMachines() {
-                EntityResponse<StateMachine> stateMachineEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + STATE_MACHINE)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<StateMachine>>() {})
-                .block();
+  public List<EntityData<StateMachine>> getStateMachines() {
+    EntityResponse<StateMachine> stateMachineEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + STATE_MACHINE)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<StateMachine>>() {
+      })
+      .block();
 
-        return stateMachineEntityResponse.getData();
-    }
+    return stateMachineEntityResponse.getData();
+  }
 
-    public List<EntityData<StateMachineState>> getStateMachinesStates(String stateMachineId) {
-        EntityResponse<StateMachineState> stateMachineStateEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + STATE_MACHINE+"/"+stateMachineId+STATES)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<StateMachineState>>() {})
-                .block();
+  public List<EntityData<StateMachineState>> getStateMachinesStates(String stateMachineId) {
+    EntityResponse<StateMachineState> stateMachineStateEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + STATE_MACHINE + "/" + stateMachineId + STATES)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<StateMachineState>>() {
+      })
+      .block();
 
-        return stateMachineStateEntityResponse.getData();
-    }
+    return stateMachineStateEntityResponse.getData();
+  }
 
-    public List<EntityData<Delivery>> getDeliveriesByOrderId(String orderId) {
-        EntityResponse<Delivery> deliveryEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER+"/"+orderId+ DELIVERIES)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<Delivery>>() {})
-                .block();
+  public List<EntityData<Delivery>> getDeliveriesByOrderId(String orderId) {
+    EntityResponse<Delivery> deliveryEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER + "/" + orderId + DELIVERIES)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<Delivery>>() {
+      })
+      .block();
 
-        return deliveryEntityResponse.getData();
-    }
+    return deliveryEntityResponse.getData();
+  }
 
-    public List<EntityData<Order>> searchOrder(FilteredRequest request) {
-        Mono<EntityResponse<Order>> result = shopwareWebClient.post()
-                .uri(shopwareSyncProperties.getUrl() + SEARCH_ORDER)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(request), FilteredRequest.class)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        return response.bodyToMono(new ParameterizedTypeReference<EntityResponse<Order>>() {
-                        });
-                    } else {
-                        return Mono.empty();
-                    }
-                });
-
-        EntityResponse<Order> payload = result.block();
-        if (payload == null) {
-            log.error("Error...");
-            return null;
+  public List<EntityData<Order>> searchOrder(FilteredRequest request) {
+    Mono<EntityResponse<Order>> result = shopwareWebClient.post()
+      .uri(shopwareSyncProperties.getUrl() + SEARCH_ORDER)
+      .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .body(Mono.just(request), FilteredRequest.class)
+      .exchangeToMono(response -> {
+        if (response.statusCode().equals(HttpStatus.OK)) {
+          return response.bodyToMono(new ParameterizedTypeReference<EntityResponse<Order>>() {
+          });
         } else {
-            return payload.getData();
+          return Mono.empty();
         }
+      });
 
+    EntityResponse<Order> payload = result.block();
+    if (payload == null) {
+      log.error("Error...");
+      return null;
+    } else {
+      return payload.getData();
     }
 
-    public List<EntityData<Addresses>> getAddresses(String orderId) {
-        EntityResponse<Addresses> addressesEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER+ "/" +orderId + ADDRESSES)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<Addresses>>() {})
-                .block();
+  }
 
-        return addressesEntityResponse.getData();
-    }
+  public List<EntityData<Addresses>> getAddresses(String orderId) {
+    EntityResponse<Addresses> addressesEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER + "/" + orderId + ADDRESSES)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<Addresses>>() {
+      })
+      .block();
 
-    public List<EntityData<LineItem>> getLineItems(String orderId) {
-        EntityResponse<LineItem> lineItemEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER+ "/" +orderId + LINE_ITEMS)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<LineItem>>() {})
-                .block();
+    return addressesEntityResponse.getData();
+  }
 
-        return lineItemEntityResponse.getData();
-    }
+  public List<EntityData<LineItem>> getLineItems(String orderId) {
+    EntityResponse<LineItem> lineItemEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER + "/" + orderId + LINE_ITEMS)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<LineItem>>() {
+      })
+      .block();
 
-    public List<EntityData<Product>> getOrderLineItemProduct(String orderLineItemId) {
-        EntityResponse<Product> productEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER_LINE_ITEM+ "/" +orderLineItemId + PRODUCT)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<Product>>() {})
-                .block();
+    return lineItemEntityResponse.getData();
+  }
 
-        return productEntityResponse.getData();
-    }
+  public List<EntityData<Product>> getOrderLineItemProduct(String orderLineItemId) {
+    EntityResponse<Product> productEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER_LINE_ITEM + "/" + orderLineItemId + PRODUCT)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<Product>>() {
+      })
+      .block();
 
-    public List<EntityData<OrderTransaction>> getOrderTransactions(String orderId) {
-        EntityResponse<OrderTransaction> productEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER+ "/" +orderId + TRANSACTIONS)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<OrderTransaction>>() {})
-                .block();
+    return productEntityResponse.getData();
+  }
 
-        return productEntityResponse.getData();
-    }
+  public List<EntityData<OrderTransaction>> getOrderTransactions(String orderId) {
+    EntityResponse<OrderTransaction> productEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER + "/" + orderId + TRANSACTIONS)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<OrderTransaction>>() {
+      })
+      .block();
 
-    public List<EntityData<Country>> getCountryForAddress(String addressId) {
-        EntityResponse<Country> countryEntityResponse = shopwareWebClient.get()
-                .uri(shopwareSyncProperties.getUrl() + ORDER_ADDRESS+ "/" +addressId + COUNTRY)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<EntityResponse<Country>>() {})
-                .block();
+    return productEntityResponse.getData();
+  }
 
-        return countryEntityResponse.getData();
-    }
+  public List<EntityData<Country>> getCountryForAddress(String addressId) {
+    EntityResponse<Country> countryEntityResponse = shopwareWebClient.get()
+      .uri(shopwareSyncProperties.getUrl() + ORDER_ADDRESS + "/" + addressId + COUNTRY)
+      .retrieve()
+      .bodyToMono(new ParameterizedTypeReference<EntityResponse<Country>>() {
+      })
+      .block();
 
-    public void setOrderState(Transition transition, String orderId, OrderState state) {
+    return countryEntityResponse.getData();
+  }
 
-        shopwareWebClient.post()
-                .uri(shopwareSyncProperties.getUrl() + ACTION_ORDER_STATE + orderId + STATE + state)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(transition), Transition.class)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        log.info("Shopware order {} set status: {}", orderId, state);
-                        return Mono.empty();
-                    } else {
-                        log.error("Error setting OrderState: " + response.statusCode().toString());
-                        return Mono.error(new RuntimeException("Error setting OrderState: " + response.statusCode().toString()));
-                    }
-                })
-                .block();
+  public void setOrderState(Transition transition, String orderId, OrderState state) {
 
-    }
+    shopwareWebClient.post()
+      .uri(shopwareSyncProperties.getUrl() + ACTION_ORDER_STATE + orderId + STATE + state)
+      .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .body(Mono.just(transition), Transition.class)
+      .exchangeToMono(response -> {
+        if (response.statusCode().equals(HttpStatus.OK)) {
+          log.info("Shopware order {} set status: {}", orderId, state);
+          return Mono.empty();
+        } else {
+          log.error("Error setting OrderState: " + response.statusCode().toString());
+          return Mono.error(new RuntimeException("Error setting OrderState: " + response.statusCode().toString()));
+        }
+      })
+      .block();
 
-    public void setOrderState(Transition transition, String orderId, DeliveryState state) {
+  }
 
-        shopwareWebClient.post()
-                .uri(shopwareSyncProperties.getUrl() + ACTION_DELIVERY_STATE + orderId + STATE + state)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(transition), Transition.class)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        log.info("Shopware order {} set delivery status: {}", orderId, state);
-                        return Mono.empty();
-                    } else {
-                        log.error("Error setting OrderState: " + response.statusCode().toString());
-                        return Mono.error(new RuntimeException("Error setting delivery State: " + response.statusCode().toString()));
-                    }
-                })
-                .block();
-    }
+  public void setOrderState(Transition transition, String orderId, DeliveryState state) {
 
-    public void patchDeliveryOrder(DeliveryOrderTrackingCode deliveryOrder, String deliveryId) {
+    shopwareWebClient.post()
+      .uri(shopwareSyncProperties.getUrl() + ACTION_DELIVERY_STATE + orderId + STATE + state)
+      .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .body(Mono.just(transition), Transition.class)
+      .exchangeToMono(response -> {
+        if (response.statusCode().equals(HttpStatus.OK)) {
+          log.info("Shopware order {} set delivery status: {}", orderId, state);
+          return Mono.empty();
+        } else {
+          log.error("Error setting OrderState: " + response.statusCode().toString());
+          return Mono.error(new RuntimeException("Error setting delivery State: " + response.statusCode().toString()));
+        }
+      })
+      .block();
+  }
 
-        shopwareWebClient.patch()
-            .uri(shopwareSyncProperties.getUrl() + ORDER_DELIVERY + deliveryId)
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .body(Mono.just(deliveryOrder), Transition.class)
-            .exchangeToMono(response -> {
-                if (response.statusCode().equals(HttpStatus.NO_CONTENT)) {
-                    log.info("Shopware set Tracking Code: {}", deliveryId);
-                    return Mono.empty();
-                } else {
-                    log.error("Error setting Tracking Code: {}", response.statusCode());
-                    return Mono.error(new RuntimeException("Error setting Tracking Code: " + response.statusCode()));
-                }
-            })
-            .block();
-    }
+  public void patchDeliveryOrder(DeliveryOrderTrackingCode deliveryOrder, String deliveryId) {
+
+    shopwareWebClient.patch()
+      .uri(shopwareSyncProperties.getUrl() + ORDER_DELIVERY + deliveryId)
+      .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+      .body(Mono.just(deliveryOrder), Transition.class)
+      .exchangeToMono(response -> {
+        if (response.statusCode().equals(HttpStatus.NO_CONTENT)) {
+          log.info("Shopware set Tracking Code: {}", deliveryId);
+          return Mono.empty();
+        } else {
+          log.error("Error setting Tracking Code: {}", response.statusCode());
+          return Mono.error(new RuntimeException("Error setting Tracking Code: " + response.statusCode()));
+        }
+      })
+      .block();
+  }
 }

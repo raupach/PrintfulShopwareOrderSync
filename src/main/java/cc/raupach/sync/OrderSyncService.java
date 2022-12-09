@@ -20,67 +20,67 @@ import java.util.Optional;
 @Slf4j
 public class OrderSyncService {
 
-    @Autowired
-    private ShopwareService shopwareService;
+  @Autowired
+  private ShopwareService shopwareService;
 
-    @Autowired
-    private PrintfulService printfulService;
+  @Autowired
+  private PrintfulService printfulService;
 
 
-    public void run() {
+  public void run() {
 
-        log.info(">>> Check open and paid orders. <<<");
-        processOpenAndPaidShopwareOrders();
+    log.info(">>> Check open and paid orders. <<<");
+    processOpenAndPaidShopwareOrders();
 
-        log.info(">>> Check in progress orders. <<<");
-        processInProgressOrders();
-    }
+    log.info(">>> Check in progress orders. <<<");
+    processInProgressOrders();
+  }
 
-    private void processInProgressOrders() {
-        List<OrderBo> inProgressAndPayedOrders = shopwareService.getInProgressAndPayedOrders();
-        log.info("{} in progress and paid orders found.", inProgressAndPayedOrders.size());
+  private void processInProgressOrders() {
+    List<OrderBo> inProgressAndPayedOrders = shopwareService.getInProgressAndPayedOrders();
+    log.info("{} in progress and paid orders found.", inProgressAndPayedOrders.size());
 
-        inProgressAndPayedOrders.forEach(order -> {
-            Optional<Order> printfulOrderOptional = printfulService.getOrder(order.getOrderNumber());
+    inProgressAndPayedOrders.forEach(order -> {
+      Optional<Order> printfulOrderOptional = printfulService.getOrder(order.getOrderNumber());
 
-            printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
-                OrderStatus status = printfulOrder.getStatus();
-                List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
-                switch (status) {
-                    case fulfilled -> shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
-                    case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, true);
-                    default -> log.info("No change for order {}", order.getOrderNumber());
-                }
-            }, () -> log.info("Ooops, 'in process' order {} is not a valid printful order.", order.getOrderNumber()));
-        });
-    }
+      printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
+        OrderStatus status = printfulOrder.getStatus();
+        List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
+        switch (status) {
+          case fulfilled -> shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
+          case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, true);
+          default -> log.info("No change for order {}", order.getOrderNumber());
+        }
+      }, () -> log.info("Ooops, 'in process' order {} is not a valid printful order.", order.getOrderNumber()));
+    });
+  }
 
-    private void processOpenAndPaidShopwareOrders() {
-        List<OrderBo> openAndPaidOrders = shopwareService.getOpenAndPaidOrders();
-        log.info("{} open and paid orders found.", openAndPaidOrders.size());
+  private void processOpenAndPaidShopwareOrders() {
+    List<OrderBo> openAndPaidOrders = shopwareService.getOpenAndPaidOrders();
+    log.info("{} open and paid orders found.", openAndPaidOrders.size());
 
-        openAndPaidOrders.forEach(order -> {
-            Optional<Order> printfulOrderOptional = printfulService.getOrder(order.getOrderNumber());
+    openAndPaidOrders.forEach(order -> {
+      Optional<Order> printfulOrderOptional = printfulService.getOrder(order.getOrderNumber());
 
-            printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
-                OrderStatus status = printfulOrder.getStatus();
-                List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
-                switch (status) {
-                    case inprocess -> shopwareService.setOrderStatus(order, OrderState.process, true);
-                    case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, false);
-                    case fulfilled -> {
-                        shopwareService.setOrderStatus(order, OrderState.process, false);
-                        shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
-                    }
-                    case pending -> log.info("Order {} still pending.", order.getOrderNumber());
-                    default -> {
-                    }
-                }
-            }, () -> {
-                // Create new Printful Order
-                printfulService.placeNewOrders(List.of(order));
-            });
-        });
-    }
+      printfulOrderOptional.ifPresentOrElse(printfulOrder -> {
+        OrderStatus status = printfulOrder.getStatus();
+        List<String> trackingUrls = printfulOrder.getShipments().stream().map(Shipment::getTracking_url).toList();
+        switch (status) {
+          case inprocess -> shopwareService.setOrderStatus(order, OrderState.process, true);
+          case canceled, failed, archived -> shopwareService.setOrderStatus(order, OrderState.cancel, false);
+          case fulfilled -> {
+            shopwareService.setOrderStatus(order, OrderState.process, false);
+            shopwareService.setDeliveryStatus(order, trackingUrls, DeliveryState.ship);
+          }
+          case pending -> log.info("Order {} still pending.", order.getOrderNumber());
+          default -> {
+          }
+        }
+      }, () -> {
+        // Create new Printful Order
+        printfulService.placeNewOrders(List.of(order));
+      });
+    });
+  }
 
 }
