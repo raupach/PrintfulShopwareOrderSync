@@ -15,4 +15,5 @@ sync.shopware.url=https://<INSERT YOUR SHOPWARE-DOMAIN>/api/
 # These are the internal Shopware states of the orders. In most cases this can remain as it is.
 sync.shopware.orderOpenStateName=open
 sync.shopware.orderPaidStateName=paid
+sync.shopware.orderAuthorizedStateName=authorized
 sync.shopware.orderProgressStateName=in_progress

@@ -91,6 +91,7 @@ public class ShopwareService {
 
   private List<EntityData<Order>> filterPayedOrders(List<EntityData<Order>> orders) {
     String paidStateId = findState(getStateMachines(), "order_transaction.state", shopwareSyncProperties.getOrderPaidStateName());
+    String authorizedStateId = findState(getStateMachines(), "order_transaction.state", shopwareSyncProperties.getOrderAuthorizedStateName());
 
     return orders.stream()
       .filter(order -> {
@@ -98,7 +99,8 @@ public class ShopwareService {
         if (tx.size() != 1) {
           throw new RuntimeException("Unexpected result");
         } else {
-          return StringUtils.equals(paidStateId, tx.get(0).getAttributes().getStateId());
+          return StringUtils.equals(paidStateId, tx.get(0).getAttributes().getStateId()) ||
+            StringUtils.equals(authorizedStateId, tx.get(0).getAttributes().getStateId());
         }
       }).collect(Collectors.toList());
   }

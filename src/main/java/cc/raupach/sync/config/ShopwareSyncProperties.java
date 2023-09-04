@@ -21,6 +21,9 @@ public class ShopwareSyncProperties {
   @Value("${sync.shopware.orderPaidStateName}")
   private String orderPaidStateName;
 
+  @Value("${sync.shopware.orderAuthorizedStateName}")
+  private String orderAuthorizedStateName;
+
   @Value("${sync.shopware.orderProgressStateName}")
   private String orderProgressStateName;
 }
