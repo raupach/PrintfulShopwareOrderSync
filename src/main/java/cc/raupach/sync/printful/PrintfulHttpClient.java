@@ -5,6 +5,7 @@ import cc.raupach.sync.printful.dto.NewOrderRequest;
 import cc.raupach.sync.printful.dto.NewOrderResponse;
 import cc.raupach.sync.printful.dto.OrderResponse;
 import cc.raupach.sync.printful.dto.VariantResponse;
+import com.google.common.util.concurrent.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,6 +25,8 @@ public class PrintfulHttpClient {
   private static final String STORE_VARIANTS = "store/variants";
   private static final String AUTHORIZATION = "Authorization";
 
+  private final RateLimiter rateLimiter = RateLimiter.create(2.0);
+
   @Autowired
   private PrintfulSyncProperties printfulSyncProperties;
 
@@ -38,7 +41,8 @@ public class PrintfulHttpClient {
 
 
   public OrderResponse getOrders() {
-
+    double sleep = rateLimiter.acquire();
+    log.debug("Sleep: {}", sleep);
     return printfulWebClient.get()
       .uri(printfulSyncProperties.getUrl() + ORDERS)
       .header(AUTHORIZATION, getAuthorizationValue())
@@ -48,7 +52,8 @@ public class PrintfulHttpClient {
   }
 
   public NewOrderResponse getOrderByExternalId(String externalId) {
-
+    double sleep = rateLimiter.acquire();
+    log.debug("Sleep: {}", sleep);
     Mono<NewOrderResponse> newOrderResponseMono = printfulWebClient.get()
       .uri(printfulSyncProperties.getUrl() + ORDERS + "/@" + externalId)
       .header(AUTHORIZATION, getAuthorizationValue())
@@ -65,6 +70,8 @@ public class PrintfulHttpClient {
 
 
   public NewOrderResponse postOrder(NewOrderRequest printfulOrder) {
+    double sleep = rateLimiter.acquire();
+    log.debug("Sleep: {}", sleep);
     Mono<NewOrderResponse> result = printfulWebClient.post()
       .uri(printfulSyncProperties.getUrl() + ORDERS)
       .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -89,6 +96,8 @@ public class PrintfulHttpClient {
   }
 
   public NewOrderResponse confirmOrder(String orderId) {
+    double sleep = rateLimiter.acquire();
+    log.debug("Sleep: {}", sleep);
     Mono<NewOrderResponse> result = printfulWebClient.post()
       .uri(printfulSyncProperties.getUrl() + ORDERS + "/" + orderId + CONFIRM)
       .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -113,6 +122,8 @@ public class PrintfulHttpClient {
 
 
   public VariantResponse getVariantDetail(String id) {
+    double sleep = rateLimiter.acquire();
+    log.debug("Sleep: {}", sleep);
     Mono<VariantResponse> responseMono = printfulWebClient.get()
       .uri(printfulSyncProperties.getUrl() + STORE_VARIANTS + "/" + id)
       .header(AUTHORIZATION, getAuthorizationValue())
