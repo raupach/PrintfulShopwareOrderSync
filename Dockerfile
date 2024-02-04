@@ -1,4 +1,4 @@
-FROM openjdk:17-alpine
+FROM amazoncorretto:21-alpine
 
 ENV ARTIFACT_NAME=printfulShopwareOrderSync
 
